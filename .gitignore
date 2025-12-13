@@ -5,3 +5,9 @@ data/
 output/
 audio/
 videos/
+test.py
+data2/
+test_generados/
+data3/
+models.old/
+*.png
