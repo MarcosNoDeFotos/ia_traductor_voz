@@ -1,5 +1,6 @@
 from TTS.api import TTS
 import os
+from datetime import datetime
 
 MODELS_PATH = "models/generated/"  # Ruta a tu modelo entrenado
 MODEL_PATH = MODELS_PATH +"glowtts/best_model.pth"  # Ruta a tu modelo entrenado
@@ -7,8 +8,9 @@ CONFIG_PATH = MODELS_PATH +"glowtts/config.json"     # Config de tu modelo
 VOCODER_PATH = MODELS_PATH + "vocoder/best_model.pth"  # Ruta a tu vocoder entrenado
 VOCODER_CONFIG_PATH = MODELS_PATH + "vocoder/config.json"  # Ruta a tu vocoder entrenado
 
-
-OUTPUT_PATH = "output/generated_audio_custom.wav"
+# Añadir fecha y hora al nombre del archivo de salida
+fecha_actual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+OUTPUT_PATH = f"output/generated_audio_custom_{fecha_actual}.wav"
 os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
 
 # Cargar modelo con TTS.api, indicando config y checkpoint
