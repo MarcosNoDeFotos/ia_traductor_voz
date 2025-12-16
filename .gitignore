@@ -12,3 +12,4 @@ data3/
 models.old/
 *.png
 *.wav
+mels_generados_modelo/
