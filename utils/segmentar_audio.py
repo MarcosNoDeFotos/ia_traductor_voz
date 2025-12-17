@@ -6,6 +6,8 @@ from tqdm import tqdm
 from time import sleep
 import matplotlib.pyplot as plt
 import re
+import shutil
+from datetime import datetime
 
 METADATA_PATH = "data/metadata.csv"
 SPLITTED_DIR = "audio/splitted"
@@ -45,6 +47,29 @@ def audiosegment_to_audio_data(
     return sr.AudioData(mono16.raw_data, mono16.frame_rate, mono16.sample_width)
 
 
+# Nuevo helper: reconocimiento con reintentos y backoff ante throttling/errores
+def safe_recognize_google(
+    recognizer: sr.Recognizer,
+    audio_data: sr.AudioData,
+    language: str = "es-ES",
+    max_retries: int = 3,
+    backoff_base: float = 1.5,
+) -> str:
+    for attempt in range(max_retries):
+        try:
+            return recognizer.recognize_google(audio_data, language=language)
+        except sr.UnknownValueError:
+            # Audio no entendible
+            return ""
+        except sr.RequestError as e:
+            # Throttling/red de Google; reintentar con backoff
+            if attempt < max_retries - 1:
+                sleep(backoff_base ** attempt)
+                continue
+            print(f"Error del servicio de Google Speech: {e}")
+            return ""
+
+
 def transcribir_audios(language: str = "es-ES"):
     # Recorre audio/splitted, transcribe y escribe metadata.csv
     os.makedirs(SPLITTED_DIR, exist_ok=True)
@@ -77,6 +102,7 @@ def transcribir_audios(language: str = "es-ES"):
 def normalizarSegmento(
     original: AudioSegment, start: int, end: int
 ) -> tuple[AudioSegment, int, int]:
+    # Reemplaza los silencios en cualquier posición por silencios predeterminados de duración fija
     SILENCE_TRESHOLD = 30  # umbral de amplitud de muestra para silencio (±)
     DURACION_SILENCIO = 50  # duración del silencio requerida en ms
     PASO_MS = 100  # pasos de búsqueda (ms)
@@ -126,6 +152,7 @@ def normalizarSegmento(
 
 
 def strip_silencio(segmento: AudioSegment):
+    # Elimina silencios al inicio y al final del segmento
     SILENCE_TRESHOLD = 30
     DURACION_DETECCION_SILENCIO = 150  # ms mínimos de silencio para recortar
     DURACION_SILENCIO = 100  # ms de silencio a conservar en cada extremo
@@ -366,8 +393,27 @@ def segmentar_audio_por_palabras(
 
     recognizer = sr.Recognizer()
     corte_segmento = 4000
+
+    # Backup de metadata.csv antes de entrar al for
+    try:
+        if os.path.isfile(METADATA_PATH):
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_dir = os.path.dirname(METADATA_PATH) or "."
+            backup_path = os.path.join(backup_dir, f"metadata_{ts}.csv")
+            shutil.copy2(METADATA_PATH, backup_path)
+            print(f"Backup creado: {backup_path}")
+        else:
+            print("metadata.csv no existe; se omitió el backup inicial.")
+    except Exception as e:
+        print(f"No se pudo crear el backup de metadata.csv: {e}")
+
     for wav_path in wav_paths:
         audio = AudioSegment.from_wav(wav_path)
+        len_original = len(audio)
+        audio = strip_silencio(audio)
+        print("Limpiando silencios largos...")
+        audio = reemplazar_silencios_largos(audio)
+        print(f"Duración original: {len_original / 1000}s, tras limpieza: {len(audio) / 1000}s.")
         duracion_ms = len(audio)
         position = 0
         last_end = 0
@@ -380,15 +426,15 @@ def segmentar_audio_por_palabras(
                 end = min(position + corte_segmento, duracion_ms)
             start, end = normalizarSegmento(audio, position, end)
             segmento: AudioSegment = audio[start:end]
-
+            print(f"{end*100/duracion_ms:.2f}%. {start} - {end}.")
             # Usar sr.AudioData directamente sin exportar ni context manager
             audio_data = audiosegment_to_audio_data(segmento)
-            try:
-                texto = recognizer.recognize_google(audio_data, language="es-ES")
-            except Exception as e:
-                if str(e).strip() == "":
-                    print(e)
-                texto = ""
+
+            # Reemplazo del reconocimiento directo por el helper con reintentos
+            texto = safe_recognize_google(recognizer, audio_data, language="es-ES")
+            # Pequeña pausa para evitar rate limiting agresivo
+            sleep(0.2)
+
             texto = cleanText(texto)
             text_length = len(texto.split())
             if text_length >= num_palabras:
@@ -410,17 +456,22 @@ def segmentar_audio_por_palabras(
                     with open(METADATA_PATH, "a", encoding="utf-8") as meta:
                         meta.write(f"{out_filename}|{texto}|{texto}\n")
                     print(
-                        f"Exportado segmento {out_filename} con {text_length} palabras ({segmento_length/1000:.2f}s.)"
+                        f"Exportado segmento {out_filename} con {text_length} palabras ({segmento_length/1000:.2f}s.) ({end}/{duracion_ms})"
                     )
                 else:
                     print(
-                        f"Segmento descartado por duración: {segmento_length/1000:.2f}s."
+                        f"Segmento descartado por duración: {segmento_length/1000:.2f}s. ({end}/{duracion_ms})"
                     )
                 contador += 1
                 position = end
                 last_end = 0
-            else:
+            elif text_length != 0: # Se reconoce algo pero no llega al mínimo
                 last_end = end
+            else:
+                last_end = 0
+                position = end
+            if duracion_ms - last_end < corte_segmento:
+                break
         print(f"Segmentación completada para {wav_path}, total segmentos: {contador}.")
 
 
