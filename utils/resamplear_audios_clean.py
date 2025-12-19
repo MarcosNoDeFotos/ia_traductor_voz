@@ -5,15 +5,24 @@ def resample_audio(input_path, output_path, target_sr=22050):
     """
     Resample audio to target sample rate and convert to mono using ffmpeg.
     """
+    # cmd = [
+    #     'ffmpeg', '-y', '-i', input_path,
+    #     '-ar', str(target_sr), '-ac', '1',
+    #     output_path
+    # ]
+
     cmd = [
-        'ffmpeg', '-y', '-i', input_path,
-        '-ar', str(target_sr), '-ac', '1',
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-ac", "1",
+        "-ar", str(target_sr),
+        "-af", "aresample=resampler=soxr:precision=28",
         output_path
     ]
     subprocess.run(cmd, check=True)
     print(f"Resampled {input_path} to {output_path} at {target_sr} Hz mono.")
 
-def resample_all_cleaned_files():
+def resample_all_files():
     SRC_DIR = "audio/splitted"
     RESAMPLED_DIR = "data/wavs"
     os.makedirs(RESAMPLED_DIR, exist_ok=True)

@@ -7,6 +7,10 @@ MODEL_PATH = MODELS_PATH +"glowtts/best_model.pth"  # Ruta a tu modelo entrenado
 CONFIG_PATH = MODELS_PATH +"glowtts/config.json"     # Config de tu modelo
 VOCODER_PATH = MODELS_PATH + "vocoder/best_model.pth"  # Ruta a tu vocoder entrenado
 VOCODER_CONFIG_PATH = MODELS_PATH + "vocoder/config.json"  # Ruta a tu vocoder entrenado
+# VOCODER_PATH = "C:\\Users\\MarcosNoDeFotos\\AppData\\Local\\tts\\vocoder_models--universal--libri-tts--wavegrad/model_file.pth"  # Ruta a tu vocoder entrenado
+# VOCODER_CONFIG_PATH = "C:\\Users\\MarcosNoDeFotos\\AppData\\Local\\tts\\vocoder_models--universal--libri-tts--wavegrad/config.json"  # Ruta a tu vocoder entrenado
+
+
 OUTPUT_PATH = "output"
 
 

@@ -6,6 +6,8 @@ from TTS.utils.audio import AudioProcessor
 from TTS.vocoder.configs.hifigan_config import HifiganConfig
 from TTS.vocoder.datasets.preprocess import load_wav_data
 from TTS.vocoder.models.gan import GAN
+
+from utils.shared_configs import audio_config
 def train_vocoder():
     output_path = os.path.join(os.path.dirname(__file__), "output/vocoder")
     data_path = os.path.join(os.path.dirname(__file__), "data")
@@ -25,6 +27,7 @@ def train_vocoder():
 
 
     config = HifiganConfig(
+        audio=audio_config,
         batch_size=8,
         eval_batch_size=4,
         num_loader_workers=4,
@@ -72,3 +75,6 @@ def train_vocoder():
     #     print("No se encontró ningún checkpoint en el último run. El entrenamiento empezará desde cero.")
 
     trainer.fit()
+
+if __name__ == "__main__":
+    train_vocoder()

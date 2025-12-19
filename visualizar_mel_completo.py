@@ -18,6 +18,7 @@ CONFIG_PATH = "./models/generated/glowtts/config.json"
 # CONFIG_PATH = "./output/run-December-13-2025_07+45PM-1d17f5a/config.json"
 
 TEXT = "Hola, esto es una prueba de mi modelo entrenado. \ndespués de un rato, se dirán más cosas interesantes."
+# TEXT = "Ahora vamos a hacer una prueba con un texto que no es muy pequeño"
 RUN_FOREVER = False
 device = "cuda" if torch.cuda.is_available() else "cpu"
 

@@ -8,7 +8,7 @@ from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.utils.audio import AudioProcessor
 import torch
 import glob
-
+from utils.shared_configs import audio_config
 
 def train_voice_model():
     output_path = os.path.join(os.path.dirname(__file__), "output/model")
@@ -37,6 +37,7 @@ def train_voice_model():
         formatter="ljspeech", meta_file_train="metadata.csv", path=os.path.join(data_path)
     )
     config = GlowTTSConfig(
+        audio=audio_config,
         batch_size=5,
         eval_batch_size=4,
         num_loader_workers=0,

@@ -72,4 +72,4 @@ def test_vocoder(
 
 
 if __name__ == "__main__":
-    test_vocoder("data/wavs/2025-12-08 18-03-29_2_0.wav")
+    test_vocoder("data/wavs/frases_v1-001.wav")

@@ -1,18 +1,9 @@
-import torch
-from TTS.api import TTS
+from PIL import Image
 
-# Get device
-device = "cuda" if torch.cuda.is_available() else "cpu"
+im = Image.open("e:\\Documentos\\gifs_drops\\rustmas\\gifs\\con fondo y efecto\\final.gif")
+duration = 0
+for frame in range(im.n_frames):
+    im.seek(frame)
+    duration += im.info['duration']
 
-# List available 🐸TTS models
-print(TTS().list_models())
-
-# Init TTS
-tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-
-# Run TTS
-# ❗ Since this model is multi-lingual voice cloning model, we must set the target speaker_wav and language
-# Text to speech list of amplitude values as output
-wav = tts.tts(text="Hello world!", speaker_wav="my/cloning/audio.wav", language="es")
-# Text to speech to a file
-tts.tts_to_file(text="Hello world!", speaker_wav="my/cloning/audio.wav", language="es", file_path="output.wav")
+print("Duración total:", duration / 1000, "segundos")
